@@ -32,6 +32,8 @@ This includes,
 
   ![WeatherVPC](/task1-networking/Images/WeatherVPC.jpg)
 
+  *Default VPC also created automatically.*
+
 
 
 
