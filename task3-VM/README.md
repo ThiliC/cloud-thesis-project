@@ -11,9 +11,9 @@ Successfully deployed and accessible at
 Browser output confirms “Flask App Running on EC2 with CORS enabled!”
 
 ## Check my Output!!
-![First EC2 instance](/task3-VM/Images/first EC2 instance.jpg)
+![First EC2 instance](/task3-VM/Images/first_EC2_instance.jpg)
 
-![Flask API live](/task3-VM/Images/Flask API is running live.jpg)
+![Flask API live](/task3-VM/Images/Flask_API_is_running_live.jpg)
 
  
  
