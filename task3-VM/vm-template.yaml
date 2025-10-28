@@ -1,0 +1,72 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: EC2 Instance setup for Weather-based Solar Forecasting Application
+
+Parameters:
+  VpcId:
+    Type: String
+    Description: VPC ID from Task 1 (WeatherVPC)
+  PublicSubnetId:
+    Type: String
+    Description: Public Subnet ID for EC2 instance
+
+Resources:
+  # ------------------- Security Group -------------------
+  EC2SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow SSH and Flask (5000)
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 5000
+          ToPort: 5000
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: FlaskAppSecurityGroup
+
+  # ------------------- EC2 Instance -------------------
+  FlaskInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: t3.micro
+      KeyName: CloudKeypair
+      ImageId: ami-0aadcf405dcb7d041   # Amazon Linux 2 for eu-north-1
+      SubnetId: !Ref PublicSubnetId
+      SecurityGroupIds:
+        - !Ref EC2SecurityGroup
+      Tags:
+        - Key: Name
+          Value: FlaskAppInstance
+      UserData:
+        Fn::Base64: |
+          #!/bin/bash
+          yum update -y
+          yum install -y python3-pip
+          pip3 install flask flask-cors
+          cat > /home/ec2-user/app.py << EOF
+          from flask import Flask
+          from flask_cors import CORS
+          app = Flask(__name__)
+          CORS(app)
+          @app.route('/')
+          def home():
+              return 'Flask App Running on EC2 with CORS enabled!'
+          if __name__ == '__main__':
+              app.run(host='0.0.0.0', port=5000)
+          EOF
+          cd /home/ec2-user
+          nohup python3 app.py &
+
+Outputs:
+  InstanceId:
+    Description: ID of the created EC2 instance
+    Value: !Ref FlaskInstance
+
+  PublicIP:
+    Description: Public IP of EC2 instance
+    Value: !GetAtt FlaskInstance.PublicIp
