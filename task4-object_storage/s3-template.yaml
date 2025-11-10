@@ -1,0 +1,65 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: S3 Object Storage for Weather-Based Solar Forecasting App (no ACLs version)
+
+Resources:
+  # ---------- Public S3 Bucket ----------
+  PublicS3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "weather-public-${AWS::AccountId}"
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: false
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: false
+      WebsiteConfiguration:
+        IndexDocument: index.html
+      Tags:
+        - Key: Visibility
+          Value: Public
+
+  PublicBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref PublicS3Bucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: AllowPublicReadForWebsite
+            Effect: Allow
+            Principal: "*"
+            Action: "s3:GetObject"
+            Resource: !Sub "${PublicS3Bucket.Arn}/*"
+
+  # ---------- Protected S3 Bucket ----------
+  ProtectedS3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "weather-protected-${AWS::AccountId}"
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      Tags:
+        - Key: Visibility
+          Value: Private
+
+Outputs:
+  PublicBucketName:
+    Description: Name of the public bucket
+    Value: !Ref PublicS3Bucket
+
+  PublicWebsiteURL:
+    Description: Static website endpoint for the public bucket
+    Value: !GetAtt PublicS3Bucket.WebsiteURL
+
+  ProtectedBucketName:
+    Description: Name of the protected bucket
+    Value: !Ref ProtectedS3Bucket
