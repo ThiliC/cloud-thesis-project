@@ -1,0 +1,46 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: IAM + Secrets for Task 5
+
+Resources: 
+  WeatherSecret: 
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: WeatherAppSecret
+      Description: Dummy credentials for testing IAM access
+      SecretString: '{"username":"testuser","password":"mypassword123"}'
+
+  ReadSecretPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action: 
+              - secretsmanager:GetSecretValue
+            Resource: !Ref WeatherSecret
+
+  EC2ReadSecretRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: 
+                - ec2.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - !Ref ReadSecretPolicy
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+
+Outputs:
+  SecretName: 
+    Description: Name of the created secret
+    Value: !Ref WeatherSecret
+
+  EC2RoleName:
+    Description: EC2 Role Name
+    Value: !Ref EC2ReadSecretRole
