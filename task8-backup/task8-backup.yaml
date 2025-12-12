@@ -1,0 +1,120 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Task 8 - EC2 + Automated EBS Backups using DLM (Daily Snapshots + Retention)
+
+Parameters:
+  VpcId:
+    Type: String
+    Description: VPC ID
+
+  PublicSubnetId:
+    Type: String
+    Description: Public subnet ID
+
+  KeyName:
+    Type: String
+    Default: task6-key
+    Description: Existing EC2 KeyPair name
+
+Resources:
+  # ------------------- Security Group (SSH + HTTP) -------------------
+  Task8SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow SSH + HTTP
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: Task8-SG
+
+  # ------------------- EC2 Instance (Tag Volume for Backup) -------------------
+  Task8EC2:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: t3.micro
+      KeyName: !Ref KeyName
+      ImageId: !Sub "{{resolve:ssm:/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2}}"
+      SubnetId: !Ref PublicSubnetId
+      SecurityGroupIds:
+        - !Ref Task8SecurityGroup
+      BlockDeviceMappings: #https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-block-device-mapping.html
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: 8
+            VolumeType: gp2
+            DeleteOnTermination: true
+      Tags:
+        - Key: Name
+          Value: Task8-Backup-VM
+        # This tag is used by DLM to find which volumes to snapshot
+        - Key: Backup
+          Value: true
+      UserData:
+        Fn::Base64: |
+          #!/bin/bash
+          yum update -y
+          yum install -y httpd
+          systemctl enable httpd
+          systemctl start httpd
+          echo "Task 8 Backup VM Running" > /var/www/html/index.html
+
+  # ------------------- IAM Role for DLM -------------------
+  DLMServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: Task8-DLM-ServiceRole
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - dlm.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSDataLifecycleManagerServiceRole
+
+  # ------------------- DLM Lifecycle Policy (Daily Snapshot + Retention) -------------------
+  EBSSnapshotLifecyclePolicy:
+    Type: AWS::DLM::LifecyclePolicy
+    Properties:
+      Description: Task 8 daily EBS snapshots for volumes tagged Backup true
+      State: ENABLED
+      ExecutionRoleArn: !GetAtt DLMServiceRole.Arn
+      PolicyDetails:
+        ResourceTypes:
+          - VOLUME
+        TargetTags:
+          - Key: Backup
+            Value: "true"
+        Schedules:
+          - Name: DailySnapshots
+            CopyTags: true
+            CreateRule:
+              Interval: 24
+              IntervalUnit: HOURS
+              Times:
+                - "00:00"
+            RetainRule:
+              Count: 2
+            TagsToAdd:
+              - Key: CreatedBy
+                Value: Task8-DLM
+
+Outputs:
+  InstanceId:
+    Description: EC2 Instance ID
+    Value: !Ref Task8EC2
+
+  PublicIP:
+    Description: Public IP of EC2
+    Value: !GetAtt Task8EC2.PublicIp
