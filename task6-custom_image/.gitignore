@@ -1,0 +1,2 @@
+# Ignore AWS key pairs
+*.pem
