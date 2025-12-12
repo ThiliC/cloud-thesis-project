@@ -57,9 +57,18 @@ The stack was deployed using AWS CLI:
 
 ---
 
+## Verify IAM Role used by DLM
+
+The DLM Lifecycle Policy uses an IAM Role that allows snapshot management
+(create, describe, and delete snapshots).
+
+![DLM IAM Role](images/policy.png)
+
+---
+
 ## Verify Backup tags on EBS volume
 
-![snapshot](images/backup_tags.png)
+![tags](images/backup_tags.png)
 
 ---
 
