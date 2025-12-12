@@ -25,7 +25,7 @@ All resources are deployed using **AWS Free Tier–eligible services only**.
 
 - **Service**: Amazon EC2
 - **AMI Base**: Amazon Linux 2 (latest via SSM Parameter)
-- **Instance Type**: `t2.micro` (Free Tier eligible)
+- **Instance Type**: `t3.micro` (Free Tier eligible)
 - **Web Server**: Apache (`httpd`)
 - **Protocol**: HTTP (port 80)
 - **Deployment Method**: Infrastructure as Code (CloudFormation)
