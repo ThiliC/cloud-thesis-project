@@ -1,0 +1,71 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Task 7 - VM Provisioning with UserData (Apache auto-install)
+
+Parameters:
+  VpcId:
+    Type: String
+    Description: VPC ID
+  PublicSubnetId:
+    Type: String
+    Description: Public subnet ID
+  KeyName:
+    Type: String
+    Default: task6-key
+    Description: Existing EC2 KeyPair name
+
+  InstanceType:
+    Type: String
+    Default: t3.micro
+    AllowedValues:
+      - t3.micro
+    Description: Free tier eligible instance type
+
+  LatestAmiId:
+    Type: "AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>"
+    Default: "/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2"
+
+Resources:
+  Task7SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow SSH + HTTP
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: Task7SecurityGroup
+
+  Task7EC2:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref InstanceType
+      KeyName: !Ref KeyName
+      ImageId: !Ref LatestAmiId
+      SubnetId: !Ref PublicSubnetId
+      SecurityGroupIds:
+        - !Ref Task7SecurityGroup
+      Tags:
+        - Key: Name
+          Value: Task7-Provisioned-VM
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          yum update -y
+          yum install -y httpd
+          systemctl enable httpd
+          systemctl start httpd
+          echo "Task 7 VM Provisioning Working!" > /var/www/html/index.html
+
+Outputs:
+  InstanceId:
+    Value: !Ref Task7EC2
+  PublicIP:
+    Value: !GetAtt Task7EC2.PublicIp
