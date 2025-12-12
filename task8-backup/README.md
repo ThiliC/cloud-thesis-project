@@ -38,7 +38,7 @@ aws cloudformation deploy \
 
 The stack was deployed using AWS CLI:
 
-![Stack created](images/stackcreated_CLI.png)
+![Stack created](images/stackcreates_CLI.png)
 
 ---
 
@@ -47,7 +47,8 @@ The stack was deployed using AWS CLI:
 
 ## Verify EC2 instance is running
 
-![EC2 instance](image/running_EC2instance.png)
+![EC2 instance](images/running_EC2instance.png)
+
 ---
 
 ## Verify DLM Lifecycle Policy
