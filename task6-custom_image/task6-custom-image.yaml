@@ -1,0 +1,67 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Task 6 - EC2 instance for creating a custom AMI (Apache installed)
+
+Parameters:
+  VpcId:
+    Type: String
+    Description: VPC ID from Task 1
+  PublicSubnetId:
+    Type: String
+    Description: Public subnet ID for EC2 instance
+  KeyName:
+    Type: String
+    Default: task6-key
+    Description: EC2 SSH Keypair KeyName
+  LatestAmiId:
+    Description: Latest Amazon Linux 2 AMI (from SSM)
+    Type: "AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>"
+    Default: "/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2"
+
+Resources:
+  Task6SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow SSH + HTTP
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: Task6SecurityGroup
+
+  Task6EC2:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: t3.micro
+      KeyName: !Ref KeyName
+      ImageId: !Ref LatestAmiId
+      SubnetId: !Ref PublicSubnetId
+      SecurityGroupIds:
+        - !Ref Task6SecurityGroup
+      Tags:
+        - Key: Name
+          Value: Task6-BaseVM
+      UserData:
+        Fn::Base64: |
+          #!/bin/bash
+          yum update -y
+          yum install -y httpd
+          systemctl enable httpd
+          systemctl start httpd
+          echo "Task 6 Custom AMI Test Page" > /var/www/html/index.html
+
+Outputs:
+  InstanceId:
+    Description: ID of EC2 instance
+    Value: !Ref Task6EC2
+
+  PublicIP:
+    Description: Public IP of the VM
+    Value: !GetAtt Task6EC2.PublicIp
