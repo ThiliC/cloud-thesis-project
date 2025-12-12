@@ -42,7 +42,7 @@ The stack was deployed using AWS CLI:
 
 ---
 
-**CloudFormation stack status**  
+## CloudFormation stack status
 ![Stack Complete](images/stack.png)
 
 ## Verify EC2 instance is running
